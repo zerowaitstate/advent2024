@@ -2,17 +2,6 @@ from functools import cached_property
 from pprint import pprint
 
 class TextGrid:
-    scan_vector = [
-        (-1, 0),
-        (-1, 1),
-        (0, 1),
-        (1, 1),
-        (1, 0),
-        (1, -1),
-        (0, -1),
-        (-1, -1),
-    ]
-
     def __init__(self, filename):
         self.grid = []
         with open(filename) as f:
@@ -25,33 +14,56 @@ class TextGrid:
         c = len(self.grid[0])
         return r, c
 
-    def pattern_found(self, pattern: str, row: int, col: int, step: tuple[int, int]) -> bool:
+    def pattern_found(self, text_pattern: str, row: int, col: int, walk_pattern: list[tuple[int, int]]) -> tuple[int, int] | None:
         current_row = row
         current_col = col
-        for c in pattern:
+        for idx, c in enumerate(text_pattern):
             # cut-through guard
             if current_row < 0 or current_row >= self.dim[0] or current_col < 0 or current_col >= self.dim[1]:
-                return False
+                return None
             if self.grid[current_row][current_col] != c:
-                return False
-            current_row += step[0]
-            current_col += step[1]
-        return True
+                return None
+            if idx != len(text_pattern) - 1:
+                current_row += walk_pattern[idx][0]
+                current_col += walk_pattern[idx][1]
+        return current_row, current_col
 
-    def find_pattern(self, pattern: str):
+    def find_linear_pattern(self, pattern: str):
         hits = []
+        dist = len(pattern) - 1
+        walk_patterns = [
+            [(-1, 0)] * dist,
+            [(-1, 1)] * dist,
+            [(0, 1)] * dist,
+            [(1, 1)] * dist,
+            [(1, 0)] * dist,
+            [(1, -1)] * dist,
+            [(0, -1)] * dist,
+            [(-1, -1)] * dist,
+        ]
 
         rows, cols = self.dim
         for r in range(rows):
             for c in range(cols):
-                for v in self.scan_vector:
-                    if self.pattern_found(pattern, r, c, v):
-                        hits.append(((r, c), (r+v[0]*len(pattern),c+v[1]*len(pattern))))
+                for v in walk_patterns:
+                    pf = self.pattern_found(pattern, r, c, v)
+                    if pf is not None:
+                        hits.append(((r, c), pf))
         return hits
+
+    def find_x_pattern(self, pattern: str):
+        hits = []
+        new_pat = pattern * 2
+        walk_patterns = [
+            [(1, 1), (1, 1), (1, 1), (0, -2), (-1, 1), (-1, 1)],
+            [(1, 1), (1, 1), (1, 1), (0, -2), (-1, 1), (-1, 1)],
+            [(1, 1), (1, 1), (1, 1), (0, -2), (-1, 1), (-1, 1)],
+            [(1, 1), (1, 1), (1, 1), (0, -2), (-1, 1), (-1, 1)],
+        ]
 
 if __name__ == '__main__':
     g = TextGrid('day4input.txt')
-    hits = g.find_pattern('XMAS')
+    hits = g.find_linear_pattern('XMAS')
     pprint(hits)
     pprint(len(hits))
 
