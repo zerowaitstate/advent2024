@@ -1,13 +1,37 @@
 import heapq
 from pprint import pprint
 
+class FreeSpace:
+    def __init__(self, start, length):
+        self.start = start
+        self.length = length
+
+    def __eq__(self, other):
+        return self.start == other.start and self.length == other.length
+
+    def __ne__(self, other):
+        return self.start != other.start or self.length != other.length
+
+    def __lt__(self, other):
+        if self.start == other.start:
+            return self.length < other.length
+        return self.start < other.start
+
+    def __gt__(self, other):
+        if self.start == other.start:
+            return self.length > other.length
+        return self.start > other.start
+
+    def __str__(self):
+        return f'{self.start}->{self.length}'
+
 class Disk:
     ST_FILE = 1
     ST_FREE = 2
 
     def __init__(self):
         self.blocks: list[int|None] = []
-        self.free_space_heap: list[tuple[int,int]] = []
+        self.free_space_heap: list[FreeSpace] = []
 
     def load_disk_map(self, filename):
         st = Disk.ST_FILE
@@ -26,30 +50,31 @@ class Disk:
                     elif st == Disk.ST_FREE:
                         if int(c) != 0:
                             self.blocks += [None] * int(c)
-                            heapq.heappush(self.free_space_heap, (cur_pos, int(c)))
+                            heapq.heappush(self.free_space_heap, FreeSpace(cur_pos, int(c)))
                             cur_pos += int(c)
                         st = Disk.ST_FILE
 
     def defrag(self):
-        consolidated_span = (len(self.blocks), 0)
+        consolidated_span = FreeSpace(len(self.blocks), 0)
         for idx in range(len(self.blocks) - 1, -1, -1):
             # print(self.display_blocks(), self.display_free())
             if len(self.free_space_heap) == 0:
                 break
-            if self.free_space_heap[0][0] >= idx:
+            if self.free_space_heap[0].start >= idx:
                 # free space has moved to the end
                 break
             if self.blocks[idx] is not None:
                 # find first free span
-                free_span = heapq.heappop(self.free_space_heap)
+                free_span: FreeSpace = heapq.heappop(self.free_space_heap)
                 # move block to end of span and dec span length
                 file_id = self.blocks[idx]
-                self.blocks[free_span[0]] = file_id
+                self.blocks[free_span.start] = file_id
                 self.blocks[idx] = None
                 # dec span length
-                if free_span[1] >= 2:
-                    heapq.heappush(self.free_space_heap, (free_span[0] + 1, free_span[1] - 1))
-            consolidated_span = (idx, consolidated_span[1] + 1)
+                if free_span.length >= 2:
+                    heapq.heappush(self.free_space_heap, FreeSpace(free_span.start + 1, free_span.length - 1))
+            consolidated_span.start = idx
+            consolidated_span.length += 1
         self.free_space_heap = []
         heapq.heappush(self.free_space_heap, consolidated_span)
 
@@ -70,7 +95,7 @@ class Disk:
         return s
 
     def display_free(self):
-        s = ' '.join([f'{span[0]}->{span[1]}' for span in self.free_space_heap])
+        s = ' '.join([str(span) for span in self.free_space_heap])
         return s
 
 def main():
