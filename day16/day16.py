@@ -36,11 +36,26 @@ class Maze:
             return '\n'.join([''.join(x) for x in p1])
 
 
-if __name__ == '__main__':
+class Agent:
+    def walk(self, m: Maze, stack: list[tuple[tuple[int,int],str]] | None=None, shortest_path=None):
+        if stack is None:
+            stack = []
+            cur_pos = m.start_pos
+            cur_dir = 0
+        # turn left and go
+
+        # go forward
+        # turn right and go
+
+
+def main():
     m = Maze('test1.txt')
     bc = dict()
     bc[(12,1)] = '^'
     bc[(11,1)] = '>'
     bc[(11,2)] = '>'
     print(m.display(bc))
+
+if __name__ == '__main__':
+    main()
 
